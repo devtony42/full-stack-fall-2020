@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Emailer.MongoDb;
+using Emailer.Repo;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -29,7 +30,8 @@ namespace Emailer
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-
+            services.AddSwaggerGen();
+            
             services.Configure<MongoSettings>(Configuration.GetSection("MongoDb"));
 
             var mongoSettings = Configuration.GetValue<MongoSettings>("MongoDb");
@@ -39,9 +41,9 @@ namespace Emailer
             {
                 var settings = svc.GetService<IOptions<MongoSettings>>();
                 return mongoClient.GetDatabase("emailer");
-
             });
 
+            services.AddScoped<IRepository<Customer>, MongoCustomerRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,10 +54,15 @@ namespace Emailer
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Emailer API v1");
+                c.RoutePrefix = string.Empty;
+            });
+
             app.UseHttpsRedirection();
-
             app.UseRouting();
-
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
